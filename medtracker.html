@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RxSafe v4.14</title>
+    <style>
+        :root { --bg: #f8fafc; --card: #ffffff; --primary: #0f172a; --safe: #10b981; --warn: #f59e0b; --danger: #ef4444; --accent: #3b82f6; --text-muted: #64748b; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--primary); margin: 0; padding-bottom: 90px; }
+        .container { max-width: 480px; margin: auto; padding: 15px; }
+        .card { background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.03); position: relative; }
+        .status-banner { padding: 16px; border-radius: 14px; text-align: center; font-weight: 900; color: white; text-transform: uppercase; margin-bottom: 15px; font-size: 0.8rem; }
+        .status-safe { background: var(--safe); }
+        .status-warn { background: var(--warn); }
+        .status-danger { background: var(--danger); }
+        h2 { font-size: 0.75rem; margin-bottom: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
+        label { display: block; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); margin-bottom: 4px; }
+        input, textarea { width: 100%; padding: 12px; border: 2px solid #f1f5f9; border-radius: 10px; font-size: 1rem; box-sizing: border-box; margin-bottom: 10px; outline: none; transition: 0.2s; font-family: inherit; }
+        input:disabled { background: #f8fafc; color: var(--text-muted); border-color: transparent; }
+        .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #e2e8f0; z-index: 1000; }
+        .nav-item { border: none; background: none; color: var(--text-muted); font-size: 0.6rem; font-weight: 800; text-transform: uppercase; cursor: pointer; display: flex; flex-direction: column; align-items: center; min-width: 33%; }
+        .nav-item.active { color: var(--accent); }
+        .btn-action { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 0.85rem; font-weight: 800; cursor: pointer; margin-top: 10px; width: 100%; text-transform: uppercase; }
+        .btn-edit { position: absolute; top: 15px; right: 20px; font-size: 0.65rem; font-weight: 800; color: var(--accent); cursor: pointer; background: none; border: none; text-transform: uppercase; }
+        .btn-mini { padding: 8px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; cursor: pointer; border: none; text-transform: uppercase; }
+        #barFill { height: 20px; border-radius: 10px; width: 0%; transition: 0.6s; }
+        .history-item { padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.75rem; color: var(--primary); }
+        .history-item i { display: block; color: var(--text-muted); font-size: 0.7rem; margin-top: 4px; font-style: italic; }
+        .refill-row { display: flex; gap: 8px; align-items: flex-end; background: #f8fafc; padding: 10px; border-radius: 12px; margin-bottom: 10px; }
+        .hidden { display: none !important; }
+        .user-tag { background: var(--primary); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.6rem; font-weight: 800; display: inline-block; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="view-auth">
+        <div class="card">
+            <h2>RxSafe Access</h2>
+            <label>Username</label><input type="text" id="authUser">
+            <label>Password</label><input type="password" id="authPass">
+            <button type="button" class="btn-action" onclick="handleAuth('login')">Login</button>
+            <button type="button" class="btn-action" style="background:var(--primary);" onclick="handleAuth('signup')">Sign Up</button>
+            <p id="authMsg" style="color:var(--danger); font-size:0.7rem; font-weight:bold; text-align:center; margin-top:15px;"></p>
+        </div>
+    </div>
+
+    <div id="view-main" class="hidden">
+        <div style="display:flex; justify-content: space-between; align-items: center;">
+            <div id="currentUserTag" class="user-tag">--</div>
+            <button type="button" class="btn-mini" style="background:none; color:var(--text-muted);" onclick="logout()">Logout</button>
+        </div>
+
+        <div id="tab-log">
+            <div class="card">
+                <h2>Log Intake</h2>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+                    <div><label>Date</label><input type="date" id="logDate"></div>
+                    <div><label>Amount</label><input type="number" id="logAmt" value="1" step="0.5"></div>
+                </div>
+                <label>Notes</label><textarea id="logNote" placeholder="Add a note..." rows="2"></textarea>
+                <button type="button" onclick="addDose()" class="btn-action">SUBMIT</button>
+            </div>
+            <div class="card">
+                <h2>Daily Progress & History</h2>
+                <div style="height:20px; background:#f1f5f9; border-radius:10px; margin-bottom:10px; overflow:hidden;"><div id="barFill"></div></div>
+                <div id="doseText" style="text-align:center; font-size:0.75rem; font-weight:bold; color:var(--text-muted); margin-bottom: 15px;">Today: 0 / 0</div>
+                <div id="logHistoryList"></div>
+            </div>
+        </div>
+
+        <div id="tab-alerts" class="hidden">
+            <div id="alertBanner" class="status-banner">Loading...</div>
+            <div class="card" style="background: #fdf2f2; border-left: 4px solid var(--danger);">
+                <h2>Depletion Forecast</h2>
+                <div id="depletionAnalysis" style="font-size: 1.1rem; font-weight: 900; color: var(--danger);">--</div>
+            </div>
+            <div class="card">
+                <h2>Sustainability</h2>
+                <div id="alertAnalysis" style="font-size: 0.85rem; line-height: 1.6;"></div>
+            </div>
+        </div>
+
+        <div id="tab-profile" class="hidden">
+            <div class="card">
+                <h2>Primary Parameters</h2>
+                <button type="button" class="btn-edit" id="editBtn" onclick="toggleEdit(true)">Edit</button>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div style="grid-column: span 2;"><label>On-Hand Stock</label><input type="number" id="cfgStock" disabled></div>
+                    <div><label>Daily Goal</label><input type="number" id="cfgGoal" disabled></div>
+                    <div><label>Daily Max</label><input type="number" id="cfgMax" disabled></div>
+                    <div style="grid-column: span 2;"><label>Awake Hours</label><input type="number" id="cfgAwake" disabled></div>
+                </div>
+                <div id="editControls" class="hidden" style="display:flex; gap:8px; margin-top:10px;">
+                    <button type="button" class="btn-mini" style="background:var(--safe); color:white; flex:1;" onclick="saveInventory()">Save</button>
+                    <button type="button" class="btn-mini" style="background:var(--danger); color:white; flex:1;" onclick="toggleEdit(false)">Cancel</button>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Refill Manager</h2>
+                <div id="refillList"></div>
+                <button type="button" class="btn-action" style="background:var(--primary)" onclick="addRefillRow()">+ Add Inventory</button>
+                <h2 style="margin-top:20px;">Refill History</h2>
+                <div id="refillHistoryList"></div>
+            </div>
+            <div class="card" style="border: 1px solid var(--danger);">
+                <button type="button" class="btn-mini" style="background:var(--danger); color:white; width: 100%;" onclick="clearUserData()">Wipe All Data</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<nav class="nav-bar hidden" id="mainNav">
+    <button type="button" class="nav-item active" onclick="switchTab('log', this)">LOG</button>
+    <button type="button" class="nav-item" onclick="switchTab('alerts', this)">ALERTS</button>
+    <button type="button" class="nav-item" onclick="switchTab('profile', this)">PROFILE</button>
+</nav>
+
+<script>
+    const STORAGE_KEY_AUTH = 'rx_auth_registry';
+    const STORAGE_KEY_DATA_PREFIX = 'rx_data_';
+    let activeUser = null;
+
+    function handleAuth(mode) {
+        const user = document.getElementById('authUser').value.trim().toLowerCase();
+        const pass = document.getElementById('authPass').value.trim();
+        const msg = document.getElementById('authMsg');
+        if (!user || !pass) { msg.innerText = "Credentials required."; return; }
+        let reg = {}; try { reg = JSON.parse(localStorage.getItem(STORAGE_KEY_AUTH) || '{}'); } catch(e) {}
+        if (mode === 'signup') {
+            if (reg[user]) { msg.innerText = "Username exists."; return; }
+            reg[user] = pass; localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(reg));
+            initData(user);
+        }
+        if (reg[user] === pass) loginSuccess(user);
+        else msg.innerText = "Access denied.";
+    }
+
+    function initData(user) {
+        const baseline = { stock: 0, goal: 0, max: 12, awake: 16, today: 0, refills: [], logs: [], refillHistory: [] };
+        localStorage.setItem(STORAGE_KEY_DATA_PREFIX + user, JSON.stringify(baseline));
+    }
+
+    function getData() { 
+        if(!activeUser) return null;
+        try {
+            let d = JSON.parse(localStorage.getItem(STORAGE_KEY_DATA_PREFIX + activeUser));
+            if(!d) return null;
+            if(!Array.isArray(d.refills)) d.refills = [];
+            if(!Array.isArray(d.logs)) d.logs = [];
+            if(!Array.isArray(d.refillHistory)) d.refillHistory = [];
+            return d;
+        } catch (e) { return null; }
+    }
+
+    function saveData(d) { if(activeUser) localStorage.setItem(STORAGE_KEY_DATA_PREFIX + activeUser, JSON.stringify(d)); }
+
+    function loginSuccess(user) {
+        activeUser = user;
+        document.getElementById('view-auth').classList.add('hidden');
+        document.getElementById('view-main').classList.remove('hidden');
+        document.getElementById('mainNav').classList.remove('hidden');
+        document.getElementById('currentUserTag').innerText = `USER: ${user.toUpperCase()}`;
+        const todayStr = new Date().toISOString().split('T')[0];
+        const logDateInput = document.getElementById('logDate');
+        if(logDateInput) { logDateInput.value = todayStr; logDateInput.max = todayStr; }
+        refreshUI();
+    }
+
+    function logout() { activeUser = null; location.reload(); }
+
+    function switchTab(tabId, btn) {
+        ['log', 'alerts', 'profile'].forEach(t => document.getElementById(`tab-${t}`).classList.add('hidden'));
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+        document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+        btn.classList.add('active');
+        if(tabId === 'profile') loadProfile();
+        refreshUI();
+    }
+
+    function addDose() {
+        const d = getData(); if(!d) return;
+        const amt = parseFloat(document.getElementById('logAmt').value) || 0;
+        const entryDate = document.getElementById('logDate').value;
+        const todayStr = new Date().toISOString().split('T')[0];
+        if(entryDate === todayStr) { d.stock -= amt; d.today += amt; }
+        d.logs.unshift({ date: entryDate, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), val: amt, note: document.getElementById('logNote').value });
+        saveData(d); document.getElementById('logNote').value = ""; refreshUI();
+    }
+
+    function refreshUI() {
+        const d = getData(); if(!d) return;
+        const perc = d.max > 0 ? Math.min((d.today / d.max) * 100, 100) : 0;
+        const bar = document.getElementById('barFill');
+        if(bar) {
+            bar.style.width = perc + "%";
+            bar.style.background = d.today <= d.goal ? "var(--safe)" : (d.today <= d.max ? "var(--warn)" : "var(--danger)");
+        }
+        document.getElementById('doseText').innerText = `Today: ${d.today} / ${d.max}`;
+        document.getElementById('logHistoryList').innerHTML = d.logs.slice(0, 10).map(l => `
+            <div class="history-item">
+                <b>${l.date}</b> | +${l.val} units @ ${l.time}
+                ${l.note ? `<i>"${l.note}"</i>` : ''}
+            </div>`).join('');
+
+        const today = new Date(); today.setHours(0,0,0,0);
+        const daysLeft = d.max > 0 ? (d.stock / d.max) : 0;
+        const runOutDate = new Date(today);
+        runOutDate.setDate(today.getDate() + Math.floor(daysLeft));
+        document.getElementById('depletionAnalysis').innerText = daysLeft < 1 ? "DEPLETED" : runOutDate.toLocaleDateString();
+
+        const banner = document.getElementById('alertBanner');
+        const analysis = document.getElementById('alertAnalysis');
+        
+        // Sustainability Logic Guard
+        const futureRefills = d.refills.filter(r => r && r.date && new Date(r.date + "T00:00:00") >= today);
+        if(futureRefills.length > 0) {
+            const nextRefill = futureRefills.sort((a,b) => new Date(a.date) - new Date(b.date))[0];
+            const target = new Date(nextRefill.date + "T00:00:00");
+            const daysToRefill = Math.max(1, Math.ceil((target - today) / 86400000));
+            const allow = d.stock / daysToRefill;
+            banner.className = `status-banner status-${allow >= d.max ? 'safe' : 'danger'}`;
+            banner.innerText = allow >= d.max ? "Stock Sustainable" : "Refill Conflict";
+            analysis.innerHTML = `<p>Next Refill: <b>${nextRefill.date}</b></p><p>Days until: <b>${daysToRefill}</b></p><p>Allowable daily: <b>${allow.toFixed(1)} units</b></p>`;
+        } else {
+            banner.className = "status-banner status-warn";
+            banner.innerText = "No Refill Scheduled";
+            analysis.innerText = "Add a future date in Profile to track sustainability.";
+        }
+    }
+
+    function loadProfile() {
+        const d = getData(); if(!d) return;
+        ['cfgStock', 'cfgGoal', 'cfgMax', 'cfgAwake'].forEach(id => {
+            const key = id.replace('cfg', '').toLowerCase();
+            document.getElementById(id).value = d[key] !== undefined ? d[key] : 0;
+        });
+        document.getElementById('refillList').innerHTML = d.refills.map((r, i) => r ? `
+            <div class="refill-row">
+                <input type="date" value="${r.date}" onchange="updRef(${i},'date',this.value)">
+                <input type="number" value="${r.amt}" onchange="updRef(${i},'amt',this.value)" style="width:70px">
+                <button type="button" class="btn-mini" style="background:var(--safe); color:white" onclick="getRef(${i})">GET</button>
+            </div>` : '').join('');
+        document.getElementById('refillHistoryList').innerHTML = d.refillHistory.slice(0, 10).map(h => `<div class="history-item">${h.status} ${h.amt} units (Refill Date: ${h.refillDate})</div>`).join('');
+    }
+
+    function toggleEdit(ed) {
+        if (!ed) loadProfile(); // Reset fields to last saved state on Cancel
+        ['cfgStock', 'cfgGoal', 'cfgMax', 'cfgAwake'].forEach(id => document.getElementById(id).disabled = !ed);
+        document.getElementById('editBtn').classList.toggle('hidden', ed);
+        document.getElementById('editControls').classList.toggle('hidden', !ed);
+    }
+
+    function saveInventory() {
+        const d = getData(); if(!d) return;
+        d.stock = parseFloat(document.getElementById('cfgStock').value) || 0;
+        d.goal = parseFloat(document.getElementById('cfgGoal').value) || 0;
+        d.max = parseFloat(document.getElementById('cfgMax').value) || 0;
+        d.awake = parseFloat(document.getElementById('cfgAwake').value) || 0;
+        saveData(d); toggleEdit(false); refreshUI();
+    }
+
+    function getRef(i) {
+        const d = getData(); if(!d) return;
+        const r = d.refills[i]; if(!r || !r.date) return;
+        const todayStr = new Date().toISOString().split('T')[0];
+        
+        // Status check: "Receiving" if the date hasn't arrived yet
+        const displayStatus = r.date > todayStr ? "Receiving" : "Received";
+        
+        d.stock += parseFloat(r.amt);
+        d.refillHistory.unshift({ 
+            receivedAt: new Date().toLocaleDateString(), 
+            refillDate: r.date, 
+            amt: r.amt,
+            status: displayStatus 
+        });
+        d.refills.splice(i, 1);
+        saveData(d); loadProfile(); refreshUI();
+    }
+
+    function updRef(i, k, v) { const d = getData(); if(d && d.refills[i]) { d.refills[i][k] = k==='amt'?parseFloat(v):v; saveData(d); refreshUI(); } }
+    function addRefillRow() { const d = getData(); if(d) { d.refills.push({date: '', amt: 60}); saveData(d); loadProfile(); } }
+    function clearUserData() { if(confirm("Wipe all data?")) { initData(activeUser); refreshUI(); loadProfile(); } }
+</script>
+</body>
+</html>
