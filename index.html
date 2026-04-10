@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RxSafe v4.14</title>
+    <title>RxSafe v4.15</title>
     <style>
         :root { --bg: #f8fafc; --card: #ffffff; --primary: #0f172a; --safe: #10b981; --warn: #f59e0b; --danger: #ef4444; --accent: #3b82f6; --text-muted: #64748b; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--primary); margin: 0; padding-bottom: 90px; }
@@ -190,6 +190,21 @@
 
     function refreshUI() {
         const d = getData(); if(!d) return;
+        
+        const todayStr = new Date().toISOString().split('T')[0];
+        const todayObj = new Date(); todayObj.setHours(0,0,0,0);
+
+        // Check for "Pending" refills that have reached their date
+        let updated = false;
+        d.refillHistory.forEach(h => {
+            if (h.status === "Receiving" && h.refillDate <= todayStr) {
+                d.stock += parseFloat(h.amt);
+                h.status = "Received";
+                updated = true;
+            }
+        });
+        if(updated) saveData(d);
+
         const perc = d.max > 0 ? Math.min((d.today / d.max) * 100, 100) : 0;
         const bar = document.getElementById('barFill');
         if(bar) {
@@ -203,21 +218,19 @@
                 ${l.note ? `<i>"${l.note}"</i>` : ''}
             </div>`).join('');
 
-        const today = new Date(); today.setHours(0,0,0,0);
         const daysLeft = d.max > 0 ? (d.stock / d.max) : 0;
-        const runOutDate = new Date(today);
-        runOutDate.setDate(today.getDate() + Math.floor(daysLeft));
+        const runOutDate = new Date(todayObj);
+        runOutDate.setDate(todayObj.getDate() + Math.floor(daysLeft));
         document.getElementById('depletionAnalysis').innerText = daysLeft < 1 ? "DEPLETED" : runOutDate.toLocaleDateString();
 
         const banner = document.getElementById('alertBanner');
         const analysis = document.getElementById('alertAnalysis');
         
-        // Sustainability Logic Guard
-        const futureRefills = d.refills.filter(r => r && r.date && new Date(r.date + "T00:00:00") >= today);
+        const futureRefills = d.refills.filter(r => r && r.date && new Date(r.date + "T00:00:00") >= todayObj);
         if(futureRefills.length > 0) {
             const nextRefill = futureRefills.sort((a,b) => new Date(a.date) - new Date(b.date))[0];
             const target = new Date(nextRefill.date + "T00:00:00");
-            const daysToRefill = Math.max(1, Math.ceil((target - today) / 86400000));
+            const daysToRefill = Math.max(1, Math.ceil((target - todayObj) / 86400000));
             const allow = d.stock / daysToRefill;
             banner.className = `status-banner status-${allow >= d.max ? 'safe' : 'danger'}`;
             banner.innerText = allow >= d.max ? "Stock Sustainable" : "Refill Conflict";
@@ -245,7 +258,7 @@
     }
 
     function toggleEdit(ed) {
-        if (!ed) loadProfile(); // Reset fields to last saved state on Cancel
+        if (!ed) loadProfile();
         ['cfgStock', 'cfgGoal', 'cfgMax', 'cfgAwake'].forEach(id => document.getElementById(id).disabled = !ed);
         document.getElementById('editBtn').classList.toggle('hidden', ed);
         document.getElementById('editControls').classList.toggle('hidden', !ed);
@@ -255,8 +268,8 @@
         const d = getData(); if(!d) return;
         d.stock = parseFloat(document.getElementById('cfgStock').value) || 0;
         d.goal = parseFloat(document.getElementById('cfgGoal').value) || 0;
-        d.max = parseFloat(document.getElementById('cfgMax').value) || 0;
-        d.awake = parseFloat(document.getElementById('cfgAwake').value) || 0;
+        d.max = parseFloat(document.getElementById('cfgMax').value) || 12;
+        d.awake = parseFloat(document.getElementById('cfgAwake').value) || 16;
         saveData(d); toggleEdit(false); refreshUI();
     }
 
@@ -265,16 +278,21 @@
         const r = d.refills[i]; if(!r || !r.date) return;
         const todayStr = new Date().toISOString().split('T')[0];
         
-        // Status check: "Receiving" if the date hasn't arrived yet
-        const displayStatus = r.date > todayStr ? "Receiving" : "Received";
+        const isFuture = r.date > todayStr;
+        const displayStatus = isFuture ? "Receiving" : "Received";
         
-        d.stock += parseFloat(r.amt);
+        // Only add to stock if it's NOT in the future
+        if (!isFuture) {
+            d.stock += parseFloat(r.amt);
+        }
+
         d.refillHistory.unshift({ 
             receivedAt: new Date().toLocaleDateString(), 
             refillDate: r.date, 
             amt: r.amt,
             status: displayStatus 
         });
+        
         d.refills.splice(i, 1);
         saveData(d); loadProfile(); refreshUI();
     }
