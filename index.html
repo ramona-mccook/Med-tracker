@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Med-Tracker v4.16</title>
+    <title>Med-Tracker v4.17</title>
     <style>
         :root { --bg: #f8fafc; --card: #ffffff; --primary: #0f172a; --safe: #10b981; --warn: #f59e0b; --danger: #ef4444; --accent: #3b82f6; --text-muted: #64748b; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--primary); margin: 0; padding-bottom: 90px; }
         .container { max-width: 480px; margin: auto; padding: 15px; }
         .card { background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.03); position: relative; }
-        .status-banner { padding: 16px; border-radius: 14px; text-align: center; font-weight: 900; color: white; text-transform: uppercase; margin-bottom: 15px; font-size: 0.8rem; }
+        .status-banner { padding: 16px; border-radius: 14px; text-align: center; font-weight: 900; color: white; text-transform: uppercase; margin-bottom: 15px; font-size: 0.8rem; display: flex; justify-content: center; align-items: center; gap: 10px; }
         .status-safe { background: var(--safe); }
         .status-warn { background: var(--warn); }
         .status-danger { background: var(--danger); }
@@ -29,7 +29,8 @@
         .refill-row { display: flex; gap: 8px; align-items: flex-end; background: #f8fafc; padding: 10px; border-radius: 12px; margin-bottom: 10px; }
         .hidden { display: none !important; }
         .user-tag { background: var(--primary); color: white; padding: 4px 15px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; display: inline-block; margin-bottom: 10px; }
-        .info-icon { background: #e2e8f0; color: #64748b; border-radius: 50%; width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.6rem; cursor: pointer; font-weight: bold; }
+        .info-icon { background: rgba(255,255,255,0.2); color: white; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; cursor: pointer; font-weight: bold; border: 1px solid white; }
+        .info-icon-dark { background: #e2e8f0; color: #64748b; border: 1px solid #cbd5e1; }
         .debug-panel { font-family: monospace; font-size: 0.65rem; color: var(--text-muted); margin-top: 10px; border-top: 1px dashed #e2e8f0; padding-top: 10px; }
     </style>
 </head>
@@ -62,7 +63,7 @@
                 </div>
                 <label>Notes</label><textarea id="logNote" placeholder="Add a note..." rows="2"></textarea>
                 <button type="button" id="submitDoseBtn" onclick="addDose()" class="btn-action">SUBMIT</button>
-                <p id="logError" style="color:var(--danger); font-size:0.65rem; font-weight:bold; text-align:center; margin-top:8px;" class="hidden">Stock empty. Cannot log dose.</p>
+                <p id="logError" style="color:var(--danger); font-size:0.65rem; font-weight:bold; text-align:center; margin-top:8px;" class="hidden"></p>
             </div>
             <div class="card">
                 <h2>Daily Progress & History</h2>
@@ -75,11 +76,11 @@
         <div id="tab-alerts" class="hidden">
             <div id="alertBanner" class="status-banner">Loading...</div>
             <div class="card" style="background: #fdf2f2; border-left: 4px solid var(--danger);">
-                <h2>Depletion Forecast <span class="info-icon" onclick="alert('Depletion Forecast: Estimated date your current stock reaches 0 based on Daily Max usage.')">?</span></h2>
+                <h2>Depletion Forecast <span class="info-icon info-icon-dark" onclick="alert('Depletion Forecast: Estimated date your current stock reaches 0 based on Daily Max usage.')">?</span></h2>
                 <div id="depletionAnalysis" style="font-size: 1.1rem; font-weight: 900; color: var(--danger);">--</div>
             </div>
             <div class="card">
-                <h2>Sustainability <span class="info-icon" onclick="alert('Sustainability: Calculates if your stock will last until the next Pending refill date. Math: (Stock / Days until Refill). Result must be >= Daily Max.')">?</span></h2>
+                <h2>Sustainability <span class="info-icon info-icon-dark" onclick="alert('Sustainability: Calculates if your stock will last until the next Pending refill date. Math: (Stock / Days until Refill). Result must be >= Daily Max.')">?</span></h2>
                 <div id="alertAnalysis" style="font-size: 0.85rem; line-height: 1.6;"></div>
                 <div class="debug-panel" id="debugAlerts"></div>
             </div>
@@ -128,6 +129,10 @@
     const STORAGE_KEY_DATA_PREFIX = 'rx_data_';
     let activeUser = null;
 
+    function showBannerInfo() {
+        alert("Banner Logic:\n\nGREEN (Sustainable): Stock / Days to Refill is >= Daily Max.\n\nRED (Conflict): Stock / Days to Refill is < Daily Max.\n\nORANGE (Warning): No future refills scheduled to calculate against.");
+    }
+
     function handleAuth(mode) {
         const user = document.getElementById('authUser').value.trim().toLowerCase();
         const pass = document.getElementById('authPass').value.trim();
@@ -170,6 +175,7 @@
         document.getElementById('currentUserTag').innerText = `Hello, ${user}`;
         const todayStr = new Date().toISOString().split('T')[0];
         document.getElementById('logDate').value = todayStr;
+        document.getElementById('logDate').max = todayStr;
         refreshUI();
     }
 
@@ -186,11 +192,18 @@
 
     function addDose() {
         const d = getData(); if(!d) return;
-        if (d.stock <= 0) { return; }
-        const amt = parseFloat(document.getElementById('logAmt').value) || 0;
         const entryDate = document.getElementById('logDate').value;
         const todayStr = new Date().toISOString().split('T')[0];
-        
+        const logErr = document.getElementById('logError');
+
+        if (entryDate > todayStr) {
+            logErr.innerText = "Cannot log future dates.";
+            logErr.classList.remove('hidden');
+            return;
+        }
+        if (d.stock <= 0) { return; }
+
+        const amt = parseFloat(document.getElementById('logAmt').value) || 0;
         d.stock -= amt;
         if(entryDate === todayStr) { d.today += amt; }
         
@@ -200,11 +213,9 @@
 
     function refreshUI() {
         const d = getData(); if(!d) return;
-        
         const todayStr = new Date().toISOString().split('T')[0];
         const todayObj = new Date(); todayObj.setHours(0,0,0,0);
 
-        // Check for "Pending" refills that have reached their date
         let updated = false;
         d.refillHistory.forEach(h => {
             if (h.status === "Receiving" && h.refillDate <= todayStr) {
@@ -215,12 +226,12 @@
         });
         if(updated) saveData(d);
 
-        // Stock Enforcement Logic
         const submitBtn = document.getElementById('submitDoseBtn');
         const logErr = document.getElementById('logError');
         if(d.stock <= 0) {
             submitBtn.style.opacity = "0.5";
             submitBtn.disabled = true;
+            logErr.innerText = "Stock empty. Cannot log dose.";
             logErr.classList.remove('hidden');
         } else {
             submitBtn.style.opacity = "1";
@@ -249,8 +260,6 @@
         const banner = document.getElementById('alertBanner');
         const analysis = document.getElementById('alertAnalysis');
         const debugPanel = document.getElementById('debugAlerts');
-        
-        // Scan Refill History for future "Receiving" items
         const futureRefills = d.refillHistory.filter(h => h.status === "Receiving" && h.refillDate > todayStr);
         
         if(futureRefills.length > 0) {
@@ -260,13 +269,12 @@
             const allow = d.stock / daysToRefill;
             
             banner.className = `status-banner status-${allow >= d.max ? 'safe' : 'danger'}`;
-            banner.innerText = allow >= d.max ? "Stock Sustainable" : "Refill Conflict";
+            banner.innerHTML = (allow >= d.max ? "Stock Sustainable" : "Refill Conflict") + ' <span class="info-icon" onclick="showBannerInfo()">?</span>';
             analysis.innerHTML = `<p>Next Refill: <b>${nextRefill.refillDate}</b></p><p>Days until: <b>${daysToRefill}</b></p><p>Allowable daily: <b>${allow.toFixed(1)} units</b></p>`;
-            
             debugPanel.innerHTML = `[VALIDATION] Current Stock: ${d.stock} | Next Date: ${nextRefill.refillDate} | Days: ${daysToRefill} | Daily Max: ${d.max}`;
         } else {
             banner.className = "status-banner status-warn";
-            banner.innerText = "No Refill Scheduled";
+            banner.innerHTML = 'No Refill Scheduled <span class="info-icon" onclick="showBannerInfo()">?</span>';
             analysis.innerText = "Add a future date in Profile to track sustainability.";
             debugPanel.innerHTML = "[VALIDATION] No future refills found in history marked 'Receiving'.";
         }
@@ -302,20 +310,16 @@
         const dateVal = document.getElementById('newRefillDate').value;
         const amtVal = parseFloat(document.getElementById('newRefillAmt').value) || 0;
         if (!dateVal) { alert("Select a date."); return; }
-        
         const todayStr = new Date().toISOString().split('T')[0];
         const isFuture = dateVal > todayStr;
         const displayStatus = isFuture ? "Receiving" : "Received";
-        
         if (!isFuture) { d.stock += amtVal; }
-
         d.refillHistory.unshift({ 
             receivedAt: new Date().toLocaleDateString(), 
             refillDate: dateVal, 
             amt: amtVal,
             status: displayStatus 
         });
-        
         saveData(d); loadProfile(); refreshUI();
         document.getElementById('newRefillDate').value = "";
     }
