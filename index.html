@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Med-Tracker v4.17</title>
+    <title>Med-Tracker v4.18</title>
     <style>
         :root { --bg: #f8fafc; --card: #ffffff; --primary: #0f172a; --safe: #10b981; --warn: #f59e0b; --danger: #ef4444; --accent: #3b82f6; --text-muted: #64748b; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--primary); margin: 0; padding-bottom: 90px; }
@@ -18,7 +18,7 @@
         input, textarea { width: 100%; padding: 12px; border: 2px solid #f1f5f9; border-radius: 10px; font-size: 1rem; box-sizing: border-box; margin-bottom: 10px; outline: none; transition: 0.2s; font-family: inherit; }
         input:disabled { background: #f8fafc; color: var(--text-muted); border-color: transparent; }
         .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #e2e8f0; z-index: 1000; }
-        .nav-item { border: none; background: none; color: var(--text-muted); font-size: 0.6rem; font-weight: 800; text-transform: uppercase; cursor: pointer; display: flex; flex-direction: column; align-items: center; min-width: 33%; }
+        .nav-item { border: none; background: none; color: var(--text-muted); font-size: 0.55rem; font-weight: 800; text-transform: uppercase; cursor: pointer; display: flex; flex-direction: column; align-items: center; min-width: 20%; }
         .nav-item.active { color: var(--accent); }
         .btn-action { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 0.85rem; font-weight: 800; cursor: pointer; margin-top: 10px; width: 100%; text-transform: uppercase; }
         .btn-edit { position: absolute; top: 15px; right: 20px; font-size: 0.65rem; font-weight: 800; color: var(--accent); cursor: pointer; background: none; border: none; text-transform: uppercase; }
@@ -32,6 +32,9 @@
         .info-icon { background: rgba(255,255,255,0.2); color: white; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; cursor: pointer; font-weight: bold; border: 1px solid white; }
         .info-icon-dark { background: #e2e8f0; color: #64748b; border: 1px solid #cbd5e1; }
         .debug-panel { font-family: monospace; font-size: 0.65rem; color: var(--text-muted); margin-top: 10px; border-top: 1px dashed #e2e8f0; padding-top: 10px; }
+        .instruction-step { display: flex; gap: 15px; margin-bottom: 20px; align-items: flex-start; }
+        .step-num { background: var(--accent); color: white; min-width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; }
+        .disclaimer { font-size: 0.7rem; color: var(--text-muted); line-height: 1.5; font-style: italic; border-top: 1px solid #e2e8f0; padding-top: 15px; }
     </style>
 </head>
 <body>
@@ -59,7 +62,7 @@
                 <h2>Log Intake</h2>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
                     <div><label>Date</label><input type="date" id="logDate"></div>
-                    <div><label>Amount</label><input type="number" id="logAmt" value="1" step="0.5"></div>
+                    <div><label>Amount</label><input type="number" id="logAmt" value="1" step="0.5" min="0"></div>
                 </div>
                 <label>Notes</label><textarea id="logNote" placeholder="Add a note..." rows="2"></textarea>
                 <button type="button" id="submitDoseBtn" onclick="addDose()" class="btn-action">SUBMIT</button>
@@ -91,10 +94,10 @@
                 <h2>Primary Parameters</h2>
                 <button type="button" class="btn-edit" id="editBtn" onclick="toggleEdit(true)">Edit</button>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                    <div style="grid-column: span 2;"><label>On-Hand Stock</label><input type="number" id="cfgStock" disabled></div>
-                    <div><label>Daily Goal</label><input type="number" id="cfgGoal" disabled></div>
-                    <div><label>Daily Max</label><input type="number" id="cfgMax" disabled></div>
-                    <div style="grid-column: span 2;"><label>Awake Hours</label><input type="number" id="cfgAwake" disabled></div>
+                    <div style="grid-column: span 2;"><label>On-Hand Stock</label><input type="number" id="cfgStock" disabled min="0"></div>
+                    <div><label>Daily Goal</label><input type="number" id="cfgGoal" disabled min="0"></div>
+                    <div><label>Daily Max</label><input type="number" id="cfgMax" disabled min="0"></div>
+                    <div style="grid-column: span 2;"><label>Awake Hours</label><input type="number" id="cfgAwake" disabled min="0" max="24"></div>
                 </div>
                 <div id="editControls" class="hidden" style="display:flex; gap:8px; margin-top:10px;">
                     <button type="button" class="btn-mini" style="background:var(--safe); color:white; flex:1;" onclick="saveInventory()">Save</button>
@@ -105,7 +108,7 @@
                 <h2>Quick Add Inventory</h2>
                 <div class="refill-row">
                     <div style="flex:2;"><label>Refill Date</label><input type="date" id="newRefillDate"></div>
-                    <div style="flex:1;"><label>Qty</label><input type="number" id="newRefillAmt" value="60"></div>
+                    <div style="flex:1;"><label>Qty</label><input type="number" id="newRefillAmt" value="60" min="1"></div>
                     <button type="button" class="btn-mini" style="background:var(--safe); color:white; height:44px;" onclick="getRefillInstant()">GET</button>
                 </div>
                 <h2 style="margin-top:20px;">Refill History</h2>
@@ -115,6 +118,27 @@
                 <button type="button" class="btn-mini" style="background:var(--danger); color:white; width: 100%;" onclick="clearUserData()">Wipe All Data</button>
             </div>
         </div>
+
+        <div id="tab-info" class="hidden">
+            <div class="card">
+                <h2>Getting Started</h2>
+                <div class="instruction-step">
+                    <div class="step-num">1</div>
+                    <div><label>Setup Profile</label><p style="font-size: 0.8rem; margin: 0;">Navigate to the <b>Profile</b> tab. Set your <b>Daily Goal</b>, <b>Daily Max</b>, and <b>Awake Hours</b> to begin tracking.</p></div>
+                </div>
+                <div class="instruction-step">
+                    <div class="step-num">2</div>
+                    <div><label>Log Intake</label><p style="font-size: 0.8rem; margin: 0;">Use the <b>Log</b> tab throughout the day. The progress bar will color-code based on your Daily Max.</p></div>
+                </div>
+                <div class="instruction-step">
+                    <div class="step-num">3</div>
+                    <div><label>Watch Alerts</label><p style="font-size: 0.8rem; margin: 0;">The <b>Alerts</b> tab will notify you if your current stock is unsustainable based on scheduled refills.</p></div>
+                </div>
+                <div class="disclaimer">
+                    <b>Disclaimer:</b> This application provides estimated projections for informational purposes only. Calculation errors or data entry mistakes may occur. Always cross-verify your inventory manually.
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -122,6 +146,7 @@
     <button type="button" class="nav-item active" onclick="switchTab('log', this)">LOG</button>
     <button type="button" class="nav-item" onclick="switchTab('alerts', this)">ALERTS</button>
     <button type="button" class="nav-item" onclick="switchTab('profile', this)">PROFILE</button>
+    <button type="button" class="nav-item" onclick="switchTab('info', this)">INFO</button>
 </nav>
 
 <script>
@@ -182,7 +207,7 @@
     function logout() { activeUser = null; location.reload(); }
 
     function switchTab(tabId, btn) {
-        ['log', 'alerts', 'profile'].forEach(t => document.getElementById(`tab-${t}`).classList.add('hidden'));
+        ['log', 'alerts', 'profile', 'info'].forEach(t => document.getElementById(`tab-${t}`).classList.add('hidden'));
         document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
         document.getElementById(`tab-${tabId}`).classList.remove('hidden');
         btn.classList.add('active');
@@ -193,6 +218,7 @@
     function addDose() {
         const d = getData(); if(!d) return;
         const entryDate = document.getElementById('logDate').value;
+        const amt = parseFloat(document.getElementById('logAmt').value) || 0;
         const todayStr = new Date().toISOString().split('T')[0];
         const logErr = document.getElementById('logError');
 
@@ -201,9 +227,13 @@
             logErr.classList.remove('hidden');
             return;
         }
+        if (amt > d.stock) {
+            logErr.innerText = `Insufficient Stock (Available: ${d.stock})`;
+            logErr.classList.remove('hidden');
+            return;
+        }
         if (d.stock <= 0) { return; }
 
-        const amt = parseFloat(document.getElementById('logAmt').value) || 0;
         d.stock -= amt;
         if(entryDate === todayStr) { d.today += amt; }
         
@@ -298,10 +328,30 @@
 
     function saveInventory() {
         const d = getData(); if(!d) return;
-        d.stock = parseFloat(document.getElementById('cfgStock').value) || 0;
+        const newStock = parseFloat(document.getElementById('cfgStock').value) || 0;
+        const newAwake = parseFloat(document.getElementById('cfgAwake').value) || 0;
+        
+        // Awake hours validation (0-24)
+        if (newAwake < 0 || newAwake > 24) {
+            alert("Awake hours must be between 0 and 24.");
+            return;
+        }
+
+        // Audit check for manual stock change
+        if (newStock !== d.stock) {
+            const todayStr = new Date().toISOString().split('T')[0];
+            d.refillHistory.unshift({ 
+                receivedAt: new Date().toLocaleDateString(), 
+                refillDate: todayStr, 
+                amt: newStock,
+                status: `Stock manually adjusted to ${newStock}` 
+            });
+        }
+
+        d.stock = newStock;
         d.goal = parseFloat(document.getElementById('cfgGoal').value) || 0;
         d.max = parseFloat(document.getElementById('cfgMax').value) || 0;
-        d.awake = parseFloat(document.getElementById('cfgAwake').value) || 0;
+        d.awake = newAwake;
         saveData(d); toggleEdit(false); refreshUI();
     }
 
