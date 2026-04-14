@@ -3,23 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Med-Tracker v4.19</title>
+    <title>Med-Tracker v4.20</title>
     <style>
         :root { --bg: #f8fafc; --card: #ffffff; --primary: #0f172a; --safe: #10b981; --warn: #f59e0b; --danger: #ef4444; --accent: #3b82f6; --text-muted: #64748b; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--primary); margin: 0; overflow-x: hidden; }
         .container { max-width: 480px; margin: auto; padding: 15px; padding-top: 70px; }
         .card { background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.03); position: relative; }
         
-        /* Sidebar Navigation */
         .header { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; padding: 0 15px; z-index: 1000; }
         .menu-btn { font-size: 1.5rem; cursor: pointer; background: none; border: none; padding: 10px; }
         .sidebar { position: fixed; top: 0; left: -280px; width: 260px; height: 100%; background: var(--primary); color: white; transition: 0.3s; z-index: 2000; padding-top: 60px; }
         .sidebar.open { left: 0; }
         .sidebar-item { padding: 15px 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .sidebar-item:active { background: rgba(255,255,255,0.1); }
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 1500; }
         
-        /* UI Components */
         .status-banner { padding: 16px; border-radius: 14px; text-align: center; font-weight: 900; color: white; text-transform: uppercase; margin-bottom: 15px; font-size: 0.8rem; display: flex; justify-content: center; align-items: center; gap: 10px; }
         .status-safe { background: var(--safe); } .status-warn { background: var(--warn); } .status-danger { background: var(--danger); }
         h2 { font-size: 0.75rem; margin-bottom: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
@@ -29,8 +26,8 @@
         .btn-mini { padding: 8px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; cursor: pointer; border: none; text-transform: uppercase; }
         #barFill { height: 20px; border-radius: 10px; width: 0%; transition: 0.6s; }
         .history-item { padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.75rem; }
-        .info-icon { background: rgba(255,255,255,0.2); color: white; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; cursor: pointer; border: 1px solid white; }
-        .calc-box { background: #f1f5f9; padding: 12px; border-radius: 10px; font-family: monospace; font-size: 0.7rem; margin-bottom: 15px; color: var(--primary); border-left: 3px solid var(--accent); }
+        .history-item i { display: block; color: var(--text-muted); font-size: 0.65rem; margin-top: 4px; }
+        .inventory-stat { text-align: center; padding: 10px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
         .hidden { display: none !important; }
         .user-tag { background: var(--primary); color: white; padding: 4px 15px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; margin-bottom: 10px; display: inline-block; }
     </style>
@@ -49,32 +46,18 @@
     <div class="sidebar-item" onclick="switchTab('profile')">Profile</div>
     <div class="sidebar-item" onclick="switchTab('info')">Getting Started</div>
     <div class="sidebar-item" onclick="switchTab('help')">Help</div>
+    <div class="sidebar-item" onclick="switchTab('admin')">Admin</div>
     <div style="position: absolute; bottom: 20px; width: 100%;" class="sidebar-item" onclick="logout()">Logout</div>
 </div>
 
 <div class="container">
     <div id="view-auth">
         <div class="card">
-            <h2>Med-Tracker Login</h2>
+            <h2>Login</h2>
             <label>Username</label><input type="text" id="authUser">
             <label>Password</label><input type="password" id="authPass">
-            <button type="button" class="btn-action" onclick="handleLogin()">Login</button>
-            <p style="text-align:center; font-size:0.75rem; margin-top:20px;">
-                Don't have an account? <a href="#" onclick="showSignUp()" style="color:var(--accent); font-weight:bold;">Sign Up</a>
-            </p>
+            <button class="btn-action" onclick="handleLogin()">Login</button>
             <p id="authMsg" style="color:var(--danger); font-size:0.7rem; font-weight:bold; text-align:center; margin-top:15px;"></p>
-        </div>
-    </div>
-
-    <div id="view-signup" class="hidden">
-        <div class="card">
-            <h2>Create Account</h2>
-            <label>Email (for password reset)</label><input type="email" id="regEmail">
-            <label>Username</label><input type="text" id="regUser">
-            <label>Password</label><input type="password" id="regPass">
-            <button type="button" class="btn-action" onclick="handleSignUp()">Complete Registration</button>
-            <button type="button" class="btn-mini" style="background:none; color:var(--text-muted); width:100%; margin-top:10px;" onclick="showLogin()">Back to Login</button>
-            <p id="regMsg" style="color:var(--danger); font-size:0.7rem; font-weight:bold; text-align:center; margin-top:15px;"></p>
         </div>
     </div>
 
@@ -99,6 +82,10 @@
         </div>
 
         <div id="tab-log" class="hidden">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+                <div class="inventory-stat"><label>Stock Level</label><b id="logViewStock">0</b></div>
+                <div class="inventory-stat"><label>Taken Today</label><b id="logViewTaken">0</b></div>
+            </div>
             <div class="card">
                 <h2>Log Intake</h2>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
@@ -106,8 +93,7 @@
                     <div><label>Amount</label><input type="number" id="logAmt" value="1" step="0.5"></div>
                 </div>
                 <label>Notes</label><textarea id="logNote" placeholder="Notes..." rows="2"></textarea>
-                <button type="button" id="submitDoseBtn" onclick="addDose()" class="btn-action">SUBMIT</button>
-                <p id="logError" style="color:var(--danger); font-size:0.65rem; font-weight:bold; text-align:center; margin-top:8px;" class="hidden"></p>
+                <button type="button" onclick="addDose()" class="btn-action">SUBMIT</button>
             </div>
             <div class="card">
                 <h2>Recent History</h2>
@@ -131,44 +117,21 @@
             </div>
             <div class="card">
                 <h2>Quick Add Refill</h2>
-                <div class="refill-row">
-                    <div style="display:flex; gap:5px;">
-                        <input type="date" id="newRefillDate" style="flex:2;">
-                        <input type="number" id="newRefillAmt" value="60" style="flex:1;">
-                        <button class="btn-mini" style="background:var(--safe); color:white; height:44px;" onclick="getRefillInstant()">GET</button>
-                    </div>
-                </div>
+                <div class="refill-row"><div style="display:flex; gap:5px;"><input type="date" id="newRefillDate" style="flex:2;"><input type="number" id="newRefillAmt" value="60" style="flex:1;"><button class="btn-mini" style="background:var(--safe); color:white; height:44px;" onclick="getRefillInstant()">GET</button></div></div>
                 <h2 style="margin-top:20px;">Refill History</h2>
                 <div id="refillHistoryList"></div>
             </div>
         </div>
 
-        <div id="tab-info" class="hidden">
+        <div id="tab-admin" class="hidden">
             <div class="card">
-                <h2>Getting Started</h2>
-                <p style="font-size:0.8rem;">1. Go to <b>Profile</b> to set your stock and daily limits.</p>
-                <p style="font-size:0.8rem;">2. Use the <b>Log</b> daily to track your medication.</p>
-                <p style="font-size:0.8rem;">3. Check the <b>Dashboard</b> for sustainability alerts.</p>
-                <div class="disclaimer"><b>Disclaimer:</b> Projections may contain errors. Verify stock manually.</div>
+                <h2>User Management</h2>
+                <div id="adminUserList"></div>
             </div>
         </div>
-
-        <div id="tab-help" class="hidden">
-            <div class="card">
-                <h2>Security</h2>
-                <label>Reset Password</label>
-                <button class="btn-mini" style="width:100%; border:1px solid #e2e8f0;" onclick="alert('This site is in beta, this feature has not been enabled by the developer yet.')">Send Reset Email</button>
-            </div>
-            <div class="card">
-                <h2>Application Logic (Audit)</h2>
-                <label>Sustainability Banner</label>
-                <div class="calc-box">Result = (Stock / Days until Next Refill) vs Daily Max</div>
-                <label>Depletion Forecast</label>
-                <div class="calc-box">Date = Today + (Stock / Daily Max)</div>
-                <label>Progress Bar</label>
-                <div class="calc-box">Color = If (Today > Max) Danger; If (Today > Goal) Warn; Else Safe</div>
-            </div>
-        </div>
+        
+        <div id="tab-info" class="hidden"><div class="card"><h2>Instructions</h2><p>Standard instructions here.</p></div></div>
+        <div id="tab-help" class="hidden"><div class="card"><h2>Help</h2><p>Beta reset notice.</p></div></div>
     </div>
 </div>
 
@@ -183,96 +146,40 @@
     }
 
     function switchTab(tabId) {
-        ['dashboard', 'log', 'profile', 'info', 'help'].forEach(t => {
-            const el = document.getElementById(`tab-${t}`);
-            if(el) el.classList.add('hidden');
-        });
+        ['dashboard', 'log', 'profile', 'info', 'help', 'admin'].forEach(t => document.getElementById(`tab-${t}`)?.classList.add('hidden'));
         document.getElementById(`tab-${tabId}`).classList.remove('hidden');
         toggleMenu(false);
         if(tabId === 'profile') loadProfile();
+        if(tabId === 'admin') loadAdmin();
         refreshUI();
-    }
-
-    function showSignUp() {
-        document.getElementById('view-auth').classList.add('hidden');
-        document.getElementById('view-signup').classList.remove('hidden');
-    }
-    function showLogin() {
-        document.getElementById('view-signup').classList.add('hidden');
-        document.getElementById('view-auth').classList.remove('hidden');
-    }
-
-    function handleSignUp() {
-        const email = document.getElementById('regEmail').value.trim();
-        const user = document.getElementById('regUser').value.trim().toLowerCase();
-        const pass = document.getElementById('regPass').value.trim();
-        const msg = document.getElementById('regMsg');
-        
-        if(!email || !user || !pass) { msg.innerText = "All fields required."; return; }
-        
-        let reg = JSON.parse(localStorage.getItem(STORAGE_KEY_AUTH) || '{}');
-        if(reg[user]) { msg.innerText = "Username already exists."; return; }
-        
-        reg[user] = { pass, email };
-        localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(reg));
-        
-        const baseline = { stock: 0, goal: 0, max: 0, today: 0, logs: [], refillHistory: [] };
-        localStorage.setItem(STORAGE_KEY_DATA_PREFIX + user, JSON.stringify(baseline));
-        
-        alert("Registration successful! Please login.");
-        showLogin();
     }
 
     function handleLogin() {
         const user = document.getElementById('authUser').value.trim().toLowerCase();
         const pass = document.getElementById('authPass').value.trim();
-        const msg = document.getElementById('authMsg');
-        
         let reg = JSON.parse(localStorage.getItem(STORAGE_KEY_AUTH) || '{}');
-        
-        if(!reg[user]) {
-            msg.innerHTML = `User not found. <a href="#" onclick="showSignUp()" style="color:var(--accent);">Sign up here.</a>`;
-            return;
-        }
-        
-        if(reg[user].pass === pass) {
+        if(reg[user] && reg[user].pass === pass) {
             activeUser = user;
             document.getElementById('view-auth').classList.add('hidden');
             document.getElementById('view-main').classList.remove('hidden');
             document.getElementById('mainHeader').classList.remove('hidden');
             document.getElementById('currentUserTag').innerText = `Hello, ${user}`;
-            const todayStr = new Date().toISOString().split('T')[0];
-            document.getElementById('logDate').value = todayStr;
-            document.getElementById('logDate').max = todayStr;
             refreshUI();
-        } else {
-            msg.innerText = "Incorrect password.";
-        }
+        } else { document.getElementById('authMsg').innerText = "Access Denied."; }
     }
 
-    function getData() { 
-        if(!activeUser) return null;
-        return JSON.parse(localStorage.getItem(STORAGE_KEY_DATA_PREFIX + activeUser));
-    }
+    function getData() { return JSON.parse(localStorage.getItem(STORAGE_KEY_DATA_PREFIX + activeUser)); }
     function saveData(d) { localStorage.setItem(STORAGE_KEY_DATA_PREFIX + activeUser, JSON.stringify(d)); }
 
     function refreshUI() {
         const d = getData(); if(!d) return;
         const todayStr = new Date().toISOString().split('T')[0];
-        const todayObj = new Date(); todayObj.setHours(0,0,0,0);
+        
+        // Log Tracker Component
+        document.getElementById('logViewStock').innerText = d.stock.toFixed(1);
+        document.getElementById('logViewTaken').innerText = d.today.toFixed(1);
 
-        // Auto-process refills
-        let updated = false;
-        d.refillHistory.forEach(h => {
-            if (h.status === "Receiving" && h.refillDate <= todayStr) {
-                d.stock += parseFloat(h.amt);
-                h.status = "Received";
-                updated = true;
-            }
-        });
-        if(updated) saveData(d);
-
-        // Dashboard Progress
+        // Dashboard/Progress
         const perc = d.max > 0 ? Math.min((d.today / d.max) * 100, 100) : 0;
         document.getElementById('barFill').style.width = perc + "%";
         document.getElementById('barFill').style.background = d.today <= d.goal ? "var(--safe)" : (d.today <= d.max ? "var(--warn)" : "var(--danger)");
@@ -280,40 +187,27 @@
 
         // Depletion Calculation
         const daysLeft = d.max > 0 ? (d.stock / d.max) : 0;
-        const runOutDate = new Date(todayObj);
-        runOutDate.setDate(todayObj.getDate() + Math.floor(daysLeft));
+        const runOutDate = new Date();
+        runOutDate.setDate(runOutDate.getDate() + Math.floor(daysLeft));
         document.getElementById('depletionAnalysis').innerText = daysLeft < 1 ? "DEPLETED" : runOutDate.toLocaleDateString();
 
-        // Sustainability
-        const futureRefills = d.refillHistory.filter(h => h.status === "Receiving" && h.refillDate > todayStr);
-        const banner = document.getElementById('alertBanner');
-        const analysis = document.getElementById('alertAnalysis');
-        
-        if(futureRefills.length > 0) {
-            const next = futureRefills.sort((a,b) => new Date(a.refillDate) - new Date(b.refillDate))[0];
-            const daysTo = Math.max(1, Math.ceil((new Date(next.refillDate + "T00:00:00") - todayObj) / 86400000));
-            const allow = d.stock / daysTo;
-            banner.className = `status-banner status-${allow >= d.max ? 'safe' : 'danger'}`;
-            banner.innerText = allow >= d.max ? "Stock Sustainable" : "Refill Conflict";
-            analysis.innerHTML = `Next Refill: <b>${next.refillDate}</b><br>Allowable: <b>${allow.toFixed(1)}/day</b>`;
-        } else {
-            banner.className = "status-banner status-warn";
-            banner.innerText = "No Refill Scheduled";
-            analysis.innerText = "Add a future refill date in Profile.";
-        }
-
-        // History list
-        document.getElementById('logHistoryList').innerHTML = d.logs.slice(0, 5).map(l => `<div class="history-item"><b>${l.date}</b>: +${l.val} units</div>`).join('');
+        // Log History
+        document.getElementById('logHistoryList').innerHTML = d.logs.slice(0, 8).map(l => `
+            <div class="history-item">
+                <b>${l.date}</b>: +${l.val} units
+                ${l.note ? `<i>"${l.note}"</i>` : ''}
+            </div>`).join('');
     }
 
     function addDose() {
         const d = getData();
         const amt = parseFloat(document.getElementById('logAmt').value) || 0;
+        const note = document.getElementById('logNote').value;
         if (amt > d.stock) { alert("Insufficient Stock"); return; }
         d.stock -= amt;
         d.today += amt;
-        d.logs.unshift({ date: new Date().toISOString().split('T')[0], val: amt });
-        saveData(d); refreshUI();
+        d.logs.unshift({ date: new Date().toISOString().split('T')[0], val: amt, note: note });
+        saveData(d); document.getElementById('logNote').value = ""; refreshUI();
     }
 
     function loadProfile() {
@@ -321,10 +215,15 @@
         document.getElementById('cfgStock').value = d.stock;
         document.getElementById('cfgGoal').value = d.goal;
         document.getElementById('cfgMax').value = d.max;
-        document.getElementById('refillHistoryList').innerHTML = d.refillHistory.slice(0, 5).map(h => `<div class="history-item">${h.status} ${h.amt} units</div>`).join('');
+        document.getElementById('refillHistoryList').innerHTML = d.refillHistory.slice(0, 10).map(h => `
+            <div class="history-item">
+                <b>${h.ts || h.receivedAt || 'N/A'}</b><br>
+                ${h.status} ${h.amt} units
+            </div>`).join('');
     }
 
     function toggleEdit(ed) {
+        if (!ed) loadProfile(); // BUG FIX: Re-load saved values if cancelled
         ['cfgStock', 'cfgGoal', 'cfgMax'].forEach(id => document.getElementById(id).disabled = !ed);
         document.getElementById('editBtn').classList.toggle('hidden', ed);
         document.getElementById('editControls').classList.toggle('hidden', !ed);
@@ -333,8 +232,13 @@
     function saveInventory() {
         const d = getData();
         const newStock = parseFloat(document.getElementById('cfgStock').value) || 0;
+        const now = new Date();
         if (newStock !== d.stock) {
-            d.refillHistory.unshift({ refillDate: new Date().toISOString().split('T')[0], amt: newStock, status: `Adjusted to ${newStock}` });
+            d.refillHistory.unshift({ 
+                ts: now.toLocaleString(), 
+                amt: newStock, 
+                status: `Adjusted to ${newStock}` 
+            });
         }
         d.stock = newStock;
         d.goal = parseFloat(document.getElementById('cfgGoal').value) || 0;
@@ -349,8 +253,21 @@
         if (!dateVal) return;
         const isFuture = dateVal > new Date().toISOString().split('T')[0];
         if (!isFuture) d.stock += amtVal;
-        d.refillHistory.unshift({ refillDate: dateVal, amt: amtVal, status: isFuture ? "Receiving" : "Received" });
+        d.refillHistory.unshift({ 
+            ts: new Date().toLocaleString(), 
+            refillDate: dateVal, 
+            amt: amtVal, 
+            status: isFuture ? "Receiving" : "Received" 
+        });
         saveData(d); loadProfile(); refreshUI();
+    }
+
+    function loadAdmin() {
+        let reg = JSON.parse(localStorage.getItem(STORAGE_KEY_AUTH) || '{}');
+        document.getElementById('adminUserList').innerHTML = Object.keys(reg).map(u => `
+            <div class="history-item">
+                <b>User:</b> ${u} <br> <b>Email:</b> ${reg[u].email || 'None'}
+            </div>`).join('');
     }
 
     function logout() { location.reload(); }
