@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Med-Tracker v4.21</title>
+    <title>Med-Tracker v4.22</title>
     <style>
         :root { --bg: #f8fafc; --card: #ffffff; --primary: #0f172a; --safe: #10b981; --warn: #f59e0b; --danger: #ef4444; --accent: #3b82f6; --text-muted: #64748b; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--primary); margin: 0; overflow-x: hidden; }
-        .container { max-width: 480px; margin: auto; padding: 15px; padding-top: 70px; }
+        .container { max-width: 480px; margin: auto; padding: 15px; padding-top: 75px; }
         .card { background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.03); position: relative; }
         
         .header { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: white; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; padding: 0 15px; z-index: 1000; }
-        .menu-btn { font-size: 1.5rem; cursor: pointer; background: none; border: none; padding: 10px; }
+        .menu-btn { font-size: 1.5rem; cursor: pointer; background: none; border: none; padding: 10px; display: flex; align-items: center; gap: 12px; }
+        .page-title { font-size: 0.85rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: var(--primary); }
+        
         .sidebar { position: fixed; top: 0; left: -280px; width: 260px; height: 100%; background: var(--primary); color: white; transition: 0.3s; z-index: 2000; padding-top: 60px; }
         .sidebar.open { left: 0; }
         .sidebar-item { padding: 15px 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
@@ -19,39 +21,40 @@
         
         .status-banner { padding: 16px; border-radius: 14px; text-align: center; font-weight: 900; color: white; text-transform: uppercase; margin-bottom: 15px; font-size: 0.8rem; }
         .status-safe { background: var(--safe); } .status-danger { background: var(--danger); }
-        h2 { font-size: 0.75rem; margin-bottom: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
         
-        /* Graph Styles */
-        .usage-chart { display: flex; align-items: flex-end; gap: 8px; height: 100px; padding-top: 20px; margin-bottom: 10px; }
+        .usage-chart { display: flex; align-items: flex-end; gap: 8px; height: 100px; padding-top: 20px; }
         .usage-bar { flex: 1; background: var(--accent); border-radius: 4px 4px 0 0; position: relative; min-height: 2px; }
-        .usage-bar::after { content: attr(data-label); position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); font-size: 0.55rem; color: var(--text-muted); font-weight: bold; }
-        .usage-bar::before { content: attr(data-val); position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.6rem; font-weight: 900; color: var(--primary); }
+        .usage-bar::after { content: attr(data-label); position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); font-size: 0.55rem; color: var(--text-muted); }
         
         .inventory-viz { height: 24px; background: #e2e8f0; border-radius: 12px; overflow: hidden; display: flex; margin: 10px 0; }
         .viz-taken { background: var(--accent); height: 100%; transition: 0.6s; }
         .viz-remaining { background: var(--safe); height: 100%; transition: 0.6s; }
 
         label { display: block; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); margin-bottom: 4px; }
-        input { width: 100%; padding: 12px; border: 2px solid #f1f5f9; border-radius: 10px; margin-bottom: 10px; outline: none; box-sizing: border-box; }
+        input, textarea { width: 100%; padding: 12px; border: 2px solid #f1f5f9; border-radius: 10px; margin-bottom: 10px; outline: none; box-sizing: border-box; font-family: inherit; }
         .btn-action { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 0.85rem; font-weight: 800; cursor: pointer; width: 100%; text-transform: uppercase; }
+        .btn-mini { padding: 8px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; border: none; text-transform: uppercase; cursor: pointer; }
         .hidden { display: none !important; }
+        .history-item { padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.75rem; }
     </style>
 </head>
 <body>
 
 <div class="header hidden" id="mainHeader">
-    <button class="menu-btn" onclick="toggleMenu(true)">☰</button>
-    <div style="flex-grow: 1; text-align: right; font-weight: 900; font-size: 0.8rem; letter-spacing: 1px;">MED-TRACKER v4.21</div>
+    <button class="menu-btn" onclick="toggleMenu(true)">
+        <span>☰</span>
+        <span class="page-title" id="activePageTitle">DASHBOARD</span>
+    </button>
 </div>
 
 <div class="overlay" id="menuOverlay" onclick="toggleMenu(false)"></div>
 <div class="sidebar" id="sidebar">
-    <div class="sidebar-item" onclick="switchTab('dashboard')">Dashboard</div>
-    <div class="sidebar-item" onclick="switchTab('log')">Log</div>
-    <div class="sidebar-item" onclick="switchTab('profile')">Profile</div>
-    <div class="sidebar-item" onclick="switchTab('info')">Getting Started</div>
-    <div class="sidebar-item" onclick="switchTab('help')">Help</div>
-    <div class="sidebar-item" onclick="switchTab('admin')">Admin</div>
+    <div class="sidebar-item" onclick="switchTab('dashboard', 'Dashboard')">Dashboard</div>
+    <div class="sidebar-item" onclick="switchTab('log', 'Log')">Log</div>
+    <div class="sidebar-item" onclick="switchTab('profile', 'Profile')">Profile</div>
+    <div class="sidebar-item" onclick="switchTab('info', 'Getting Started')">Getting Started</div>
+    <div class="sidebar-item" onclick="switchTab('help', 'Help')">Help</div>
+    <div class="sidebar-item" onclick="switchTab('admin', 'Admin')">Admin</div>
     <div style="position: absolute; bottom: 20px; width: 100%;" class="sidebar-item" onclick="location.reload()">Logout</div>
 </div>
 
@@ -66,7 +69,12 @@
     </div>
 
     <div id="view-main" class="hidden">
+        
         <div id="tab-dashboard">
+            <div id="onboardingPrompt" class="hidden">
+                <button class="btn-action" style="background:var(--warn); margin-bottom: 15px;" onclick="switchTab('profile', 'Profile')">⚠️ Complete Setup: Set Daily Goals</button>
+            </div>
+            
             <div id="alertBanner" class="status-banner">Loading...</div>
             
             <div class="card">
@@ -76,19 +84,11 @@
 
             <div class="card">
                 <h2>Inventory vs. Total Taken</h2>
-                <div class="inventory-viz">
-                    <div id="vizTaken" class="viz-taken" style="width: 0%"></div>
-                    <div id="vizRemaining" class="viz-remaining" style="width: 100%"></div>
-                </div>
+                <div class="inventory-viz"><div id="vizTaken" class="viz-taken"></div><div id="vizRemaining" class="viz-remaining"></div></div>
                 <div style="display:flex; justify-content: space-between; font-size: 0.65rem; font-weight: 800;">
                     <span style="color:var(--accent)">TOTAL TAKEN: <span id="txtTotalTaken">0</span></span>
                     <span style="color:var(--safe)">REMAINING: <span id="txtRemaining">0</span></span>
                 </div>
-            </div>
-
-            <div class="card" style="background: #fdf2f2; border-left: 4px solid var(--danger);">
-                <h2>Depletion Forecast</h2>
-                <div id="depletionAnalysis" style="font-size: 1.1rem; font-weight: 900; color: var(--danger);">--</div>
             </div>
         </div>
 
@@ -99,13 +99,41 @@
                     <div><label>Date</label><input type="date" id="logDate"></div>
                     <div><label>Amount</label><input type="number" id="logAmt" value="1" step="0.5"></div>
                 </div>
-                <textarea id="logNote" placeholder="Notes..." style="width:100%; border:2px solid #f1f5f9; border-radius:10px; padding:10px;"></textarea>
-                <button class="btn-action" onclick="addDose()">SUBMIT</button>
+                <label>Notes</label><textarea id="logNote" placeholder="Add a note..."></textarea>
+                <button class="btn-action" onclick="addDose()">SUBMIT ENTRY</button>
+            </div>
+            <div class="card"><h2>Recent History</h2><div id="logHistoryList"></div></div>
+        </div>
+
+        <div id="tab-profile" class="hidden">
+            <div class="card">
+                <h2>Primary Parameters</h2>
+                <button type="button" class="btn-mini" id="editBtn" style="position:absolute; top:15px; right:20px; color:var(--accent); background:none;" onclick="toggleEdit(true)">Edit</button>
+                <label>On-Hand Stock</label><input type="number" id="cfgStock" disabled>
+                <label>Daily Goal</label><input type="number" id="cfgGoal" disabled>
+                <label>Daily Max</label><input type="number" id="cfgMax" disabled>
+                <div id="editControls" class="hidden" style="display:flex; gap:8px;">
+                    <button class="btn-mini" style="background:var(--safe); color:white; flex:1;" onclick="saveInventory()">Save</button>
+                    <button class="btn-mini" style="background:var(--danger); color:white; flex:1;" onclick="toggleEdit(false)">Cancel</button>
+                </div>
+            </div>
+            <div class="card" style="border: 1px solid var(--danger);">
+                <button class="btn-mini" style="background:var(--danger); color:white; width: 100%;" onclick="clearUserData()">Wipe All Data</button>
             </div>
         </div>
 
-        <div id="tab-profile" class="hidden"></div>
-        <div id="tab-info" class="hidden"></div>
+        <div id="tab-info" class="hidden">
+            <div class="card">
+                <h2>Getting Started</h2>
+                <p style="font-size:0.8rem;">1. Go to <b>Profile</b> to set your stock and daily limits.</p>
+                <p style="font-size:0.8rem;">2. Use the <b>Log</b> daily to track your medication.</p>
+                <p style="font-size:0.8rem;">3. Check the <b>Dashboard</b> for sustainability alerts.</p>
+                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 15px; font-style: italic; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+                    <b>Disclaimer:</b> Projections may contain errors. Verify stock manually.
+                </div>
+            </div>
+        </div>
+
         <div id="tab-help" class="hidden"></div>
         <div id="tab-admin" class="hidden"></div>
     </div>
@@ -121,10 +149,15 @@
         document.getElementById('menuOverlay').style.display = show ? 'block' : 'none';
     }
 
-    function switchTab(tabId) {
+    function switchTab(tabId, title) {
         ['dashboard', 'log', 'profile', 'info', 'help', 'admin'].forEach(t => document.getElementById(`tab-${t}`)?.classList.add('hidden'));
         document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+        document.getElementById('activePageTitle').innerText = title;
         toggleMenu(false);
+        if(tabId === 'log') {
+             document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+        }
+        if(tabId === 'profile') loadProfile();
         refreshUI();
     }
 
@@ -138,67 +171,89 @@
     }
 
     function getData() { 
-        let d = JSON.parse(localStorage.getItem(STORAGE_KEY_DATA_PREFIX + activeUser) || '{"stock":0,"max":0,"logs":[],"refillHistory":[]}');
-        return d;
+        return JSON.parse(localStorage.getItem(STORAGE_KEY_DATA_PREFIX + activeUser) || '{"stock":0,"max":0,"goal":0,"logs":[],"refillHistory":[]}');
     }
 
     function refreshUI() {
         const d = getData();
-        const todayStr = new Date().toISOString().split('T')[0];
-
-        // 1. Inventory vs Taken Logic
-        const totalTakenEver = d.logs.reduce((sum, l) => sum + parseFloat(l.val), 0);
-        const totalPossible = d.stock + totalTakenEver;
-        const takenPerc = totalPossible > 0 ? (totalTakenEver / totalPossible) * 100 : 0;
         
-        document.getElementById('vizTaken').style.width = takenPerc + "%";
-        document.getElementById('vizRemaining').style.width = (100 - takenPerc) + "%";
-        document.getElementById('txtTotalTaken').innerText = totalTakenEver.toFixed(1);
+        // Onboarding Check
+        const prompt = document.getElementById('onboardingPrompt');
+        if (d.max <= 0 || d.goal <= 0) prompt.classList.remove('hidden');
+        else prompt.classList.add('hidden');
+
+        // Inventory Logic
+        const totalTaken = d.logs.reduce((sum, l) => sum + parseFloat(l.val), 0);
+        const totalInv = d.stock + totalTaken;
+        document.getElementById('vizTaken').style.width = totalInv > 0 ? (totalTaken/totalInv*100) + "%" : "0%";
+        document.getElementById('txtTotalTaken').innerText = totalTaken.toFixed(1);
         document.getElementById('txtRemaining').innerText = d.stock.toFixed(1);
 
-        // 2. 7-Day Usage Graph Logic
+        // Charting
         const chart = document.getElementById('usageChart');
         chart.innerHTML = '';
-        const last7Days = [...Array(7)].map((_, i) => {
-            const date = new Date();
-            date.setDate(date.getDate() - i);
-            return date.toISOString().split('T')[0];
-        }).reverse();
-
-        const maxUsage = Math.max(...last7Days.map(date => 
-            d.logs.filter(l => l.date === date).reduce((s, l) => s + parseFloat(l.val), 0)
-        ), 1);
-
-        last7Days.forEach(date => {
-            const dayTotal = d.logs.filter(l => l.date === date).reduce((s, l) => s + parseFloat(l.val), 0);
-            const height = (dayTotal / maxUsage) * 100;
+        [...Array(7)].map((_, i) => {
+            const date = new Date(); date.setDate(date.getDate() - i);
+            const ds = date.toISOString().split('T')[0];
+            const val = d.logs.filter(l => l.date === ds).reduce((s, l) => s + parseFloat(l.val), 0);
             const bar = document.createElement('div');
             bar.className = 'usage-bar';
-            bar.style.height = height + '%';
-            bar.setAttribute('data-label', date.split('-')[2]); // Day number
-            bar.setAttribute('data-val', dayTotal);
+            bar.style.height = (val * 10) + 'px'; // Simple scale
+            bar.setAttribute('data-label', ds.split('-')[2]);
             chart.appendChild(bar);
         });
 
-        // Depletion Calculation
-        const daysLeft = d.max > 0 ? (d.stock / d.max) : 0;
-        const runOutDate = new Date();
-        runOutDate.setDate(runOutDate.getDate() + Math.floor(daysLeft));
-        document.getElementById('depletionAnalysis').innerText = daysLeft < 1 ? "DEPLETED" : runOutDate.toLocaleDateString();
+        document.getElementById('logHistoryList').innerHTML = d.logs.slice(0, 5).map(l => `<div class="history-item"><b>${l.date}</b>: ${l.val} units ${l.note ? `<i>- ${l.note}</i>` : ''}</div>`).join('');
         
         const banner = document.getElementById('alertBanner');
         banner.className = `status-banner ${d.stock > 0 ? 'status-safe' : 'status-danger'}`;
-        banner.innerText = d.stock > 0 ? "System Active" : "Stock Alert";
+        banner.innerText = d.stock > 0 ? "System Healthy" : "Out of Stock";
     }
 
     function addDose() {
         const d = getData();
         const amt = parseFloat(document.getElementById('logAmt').value) || 0;
-        if(amt > d.stock) { alert("Insufficient Stock"); return; }
+        const note = document.getElementById('logNote').value;
+        if(amt > d.stock) return alert("Insufficient Stock");
+        
         d.stock -= amt;
-        d.logs.unshift({ date: document.getElementById('logDate').value, val: amt });
+        d.logs.unshift({ date: document.getElementById('logDate').value, val: amt, note: note });
         localStorage.setItem(STORAGE_KEY_DATA_PREFIX + activeUser, JSON.stringify(d));
+        
+        // Reset fields
+        document.getElementById('logAmt').value = "1";
+        document.getElementById('logNote').value = "";
         refreshUI();
+    }
+
+    function loadProfile() {
+        const d = getData();
+        document.getElementById('cfgStock').value = d.stock;
+        document.getElementById('cfgGoal').value = d.goal;
+        document.getElementById('cfgMax').value = d.max;
+    }
+
+    function toggleEdit(ed) {
+        if(!ed) loadProfile();
+        ['cfgStock', 'cfgGoal', 'cfgMax'].forEach(id => document.getElementById(id).disabled = !ed);
+        document.getElementById('editBtn').classList.toggle('hidden', ed);
+        document.getElementById('editControls').classList.toggle('hidden', !ed);
+    }
+
+    function saveInventory() {
+        const d = getData();
+        d.stock = parseFloat(document.getElementById('cfgStock').value) || 0;
+        d.goal = parseFloat(document.getElementById('cfgGoal').value) || 0;
+        d.max = parseFloat(document.getElementById('cfgMax').value) || 0;
+        localStorage.setItem(STORAGE_KEY_DATA_PREFIX + activeUser, JSON.stringify(d));
+        toggleEdit(false); refreshUI();
+    }
+
+    function clearUserData() {
+        if(confirm("Erase all data?")) {
+            localStorage.setItem(STORAGE_KEY_DATA_PREFIX + activeUser, JSON.stringify({"stock":0,"max":0,"goal":0,"logs":[],"refillHistory":[]}));
+            refreshUI(); loadProfile();
+        }
     }
 </script>
 </body>
