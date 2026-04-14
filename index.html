@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Med-Tracker v4.22</title>
+    <title>Med-Tracker v4.23</title>
     <style>
         :root { --bg: #f8fafc; --card: #ffffff; --primary: #0f172a; --safe: #10b981; --warn: #f59e0b; --danger: #ef4444; --accent: #3b82f6; --text-muted: #64748b; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--primary); margin: 0; overflow-x: hidden; }
@@ -34,6 +34,7 @@
         input, textarea { width: 100%; padding: 12px; border: 2px solid #f1f5f9; border-radius: 10px; margin-bottom: 10px; outline: none; box-sizing: border-box; font-family: inherit; }
         .btn-action { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 0.85rem; font-weight: 800; cursor: pointer; width: 100%; text-transform: uppercase; }
         .btn-mini { padding: 8px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; border: none; text-transform: uppercase; cursor: pointer; }
+        .calc-box { background: #f1f5f9; padding: 12px; border-radius: 10px; font-family: monospace; font-size: 0.7rem; margin-bottom: 15px; color: var(--primary); border-left: 3px solid var(--accent); }
         .hidden { display: none !important; }
         .history-item { padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.75rem; }
     </style>
@@ -74,14 +75,11 @@
             <div id="onboardingPrompt" class="hidden">
                 <button class="btn-action" style="background:var(--warn); margin-bottom: 15px;" onclick="switchTab('profile', 'Profile')">⚠️ Complete Setup: Set Daily Goals</button>
             </div>
-            
             <div id="alertBanner" class="status-banner">Loading...</div>
-            
             <div class="card">
                 <h2>7-Day Usage History</h2>
                 <div class="usage-chart" id="usageChart"></div>
             </div>
-
             <div class="card">
                 <h2>Inventory vs. Total Taken</h2>
                 <div class="inventory-viz"><div id="vizTaken" class="viz-taken"></div><div id="vizRemaining" class="viz-remaining"></div></div>
@@ -125,17 +123,41 @@
         <div id="tab-info" class="hidden">
             <div class="card">
                 <h2>Getting Started</h2>
-                <p style="font-size:0.8rem;">1. Go to <b>Profile</b> to set your stock and daily limits.</p>
-                <p style="font-size:0.8rem;">2. Use the <b>Log</b> daily to track your medication.</p>
-                <p style="font-size:0.8rem;">3. Check the <b>Dashboard</b> for sustainability alerts.</p>
-                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 15px; font-style: italic; border-top: 1px solid #e2e8f0; padding-top: 10px;">
-                    <b>Disclaimer:</b> Projections may contain errors. Verify stock manually.
-                </div>
+                <p style="font-size:0.8rem;">1. Set your <b>Daily Goals</b> in the Profile tab.</p>
+                <p style="font-size:0.8rem;">2. Log your medication in the <b>Log</b> tab.</p>
+                <p style="font-size:0.8rem;">3. Use the tools below to set your initial stock.</p>
+            </div>
+            <div class="card">
+                <h2>Initial Inventory Setup</h2>
+                <label>Current Stock Count</label>
+                <input type="number" id="gsStock" placeholder="Enter total units on hand">
+                <button class="btn-action" onclick="setGsStock()">Set Inventory</button>
             </div>
         </div>
 
-        <div id="tab-help" class="hidden"></div>
-        <div id="tab-admin" class="hidden"></div>
+        <div id="tab-help" class="hidden">
+            <div class="card">
+                <h2>Security</h2>
+                <label>Reset Password</label>
+                <button class="btn-mini" style="width:100%; border:1px solid #e2e8f0;" onclick="alert('This site is in beta, this feature has not been enabled by the developer yet.')">Send Reset Email</button>
+            </div>
+            <div class="card">
+                <h2>Application Logic (Audit)</h2>
+                <label>Sustainability Banner</label>
+                <div class="calc-box">Result = (Stock / Days until Next Refill) vs Daily Max</div>
+                <label>Depletion Forecast</label>
+                <div class="calc-box">Date = Today + (Stock / Daily Max)</div>
+                <label>Progress Bar</label>
+                <div class="calc-box">Color = If (Today > Max) Danger; If (Today > Goal) Warn; Else Safe</div>
+            </div>
+        </div>
+
+        <div id="tab-admin" class="hidden">
+            <div class="card">
+                <h2>User Management</h2>
+                <div id="adminUserList"></div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -154,10 +176,9 @@
         document.getElementById(`tab-${tabId}`).classList.remove('hidden');
         document.getElementById('activePageTitle').innerText = title;
         toggleMenu(false);
-        if(tabId === 'log') {
-             document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
-        }
+        if(tabId === 'log') document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
         if(tabId === 'profile') loadProfile();
+        if(tabId === 'admin') loadAdmin();
         refreshUI();
     }
 
@@ -175,21 +196,18 @@
     }
 
     function refreshUI() {
+        if(!activeUser) return;
         const d = getData();
-        
-        // Onboarding Check
         const prompt = document.getElementById('onboardingPrompt');
         if (d.max <= 0 || d.goal <= 0) prompt.classList.remove('hidden');
         else prompt.classList.add('hidden');
 
-        // Inventory Logic
         const totalTaken = d.logs.reduce((sum, l) => sum + parseFloat(l.val), 0);
         const totalInv = d.stock + totalTaken;
         document.getElementById('vizTaken').style.width = totalInv > 0 ? (totalTaken/totalInv*100) + "%" : "0%";
         document.getElementById('txtTotalTaken').innerText = totalTaken.toFixed(1);
         document.getElementById('txtRemaining').innerText = d.stock.toFixed(1);
 
-        // Charting
         const chart = document.getElementById('usageChart');
         chart.innerHTML = '';
         [...Array(7)].map((_, i) => {
@@ -198,13 +216,11 @@
             const val = d.logs.filter(l => l.date === ds).reduce((s, l) => s + parseFloat(l.val), 0);
             const bar = document.createElement('div');
             bar.className = 'usage-bar';
-            bar.style.height = (val * 10) + 'px'; // Simple scale
+            bar.style.height = (val * 10) + 'px';
             bar.setAttribute('data-label', ds.split('-')[2]);
             chart.appendChild(bar);
         });
 
-        document.getElementById('logHistoryList').innerHTML = d.logs.slice(0, 5).map(l => `<div class="history-item"><b>${l.date}</b>: ${l.val} units ${l.note ? `<i>- ${l.note}</i>` : ''}</div>`).join('');
-        
         const banner = document.getElementById('alertBanner');
         banner.className = `status-banner ${d.stock > 0 ? 'status-safe' : 'status-danger'}`;
         banner.innerText = d.stock > 0 ? "System Healthy" : "Out of Stock";
@@ -215,14 +231,19 @@
         const amt = parseFloat(document.getElementById('logAmt').value) || 0;
         const note = document.getElementById('logNote').value;
         if(amt > d.stock) return alert("Insufficient Stock");
-        
         d.stock -= amt;
         d.logs.unshift({ date: document.getElementById('logDate').value, val: amt, note: note });
         localStorage.setItem(STORAGE_KEY_DATA_PREFIX + activeUser, JSON.stringify(d));
-        
-        // Reset fields
         document.getElementById('logAmt').value = "1";
         document.getElementById('logNote').value = "";
+        refreshUI();
+    }
+
+    function setGsStock() {
+        const d = getData();
+        d.stock = parseFloat(document.getElementById('gsStock').value) || 0;
+        localStorage.setItem(STORAGE_KEY_DATA_PREFIX + activeUser, JSON.stringify(d));
+        alert("Stock updated!");
         refreshUI();
     }
 
@@ -247,6 +268,12 @@
         d.max = parseFloat(document.getElementById('cfgMax').value) || 0;
         localStorage.setItem(STORAGE_KEY_DATA_PREFIX + activeUser, JSON.stringify(d));
         toggleEdit(false); refreshUI();
+    }
+
+    function loadAdmin() {
+        let reg = JSON.parse(localStorage.getItem(STORAGE_KEY_AUTH) || '{}');
+        document.getElementById('adminUserList').innerHTML = Object.keys(reg).map(u => `
+            <div class="history-item"><b>User:</b> ${u} <br> <b>Email:</b> ${reg[u].email || 'None'}</div>`).join('');
     }
 
     function clearUserData() {
